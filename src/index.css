@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-serif: 'Playfair Display', serif;
+}
+
+:root {
+  /* Carbon Design System - Gray 100 Theme */
+  --background: #161616;
+  --foreground: #f4f4f4;
+  --card: #262626;
+  --card-foreground: #f4f4f4;
+  --popover: #262626;
+  --popover-foreground: #f4f4f4;
+  --primary: #0f62fe;
+  --primary-foreground: #ffffff;
+  --secondary: #393939;
+  --secondary-foreground: #f4f4f4;
+  --muted: #393939;
+  --muted-foreground: #c6c6c6;
+  --accent: #393939;
+  --accent-foreground: #f4f4f4;
+  --destructive: #fa4d56;
+  --destructive-foreground: #ffffff;
+  --border: #393939;
+  --input: #393939;
+  --ring: #0f62fe;
+  --radius: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+* {
+  border-color: var(--border);
+  border-radius: 0 !important;
+}
+
+/* Hide scrollbar for clean app feel */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* Illuminated display serif — for the song title reveal & result hero */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+/* "Illuminated" text — soft glow halo behind large display text (version 4 look) */
+.text-glow {
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.45), 0 0 8px rgba(255, 255, 255, 0.35);
+}
+
+.text-glow-blue {
+  text-shadow: 0 0 20px rgba(15, 98, 254, 0.65), 0 0 6px rgba(15, 98, 254, 0.5);
+}
