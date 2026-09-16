@@ -18,3 +18,7 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+seed-audio/
+public/olaf/*.wasm
+public/olaf/*.js
+public/olaf/index/

@@ -1,99 +1,92 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap');
+/* src/index.css — design tokens for the iOS 26 re-base.
+   WHAT: replaces the IBM Carbon Gray-100 theme with Apple's dark system palette,
+         SF Pro text styles, iOS corner radii, and a reduced-motion guard.
+   WHY:  the redesign should read as a Shazam-family iPhone app. Carbon's sharp
+         corners, Plex type, and #161616 base were the loudest "not Shazam" tells.
+   HOW:  raw values live on :root; Tailwind v4 picks them up via @theme so utilities
+         like bg-bg-secondary / text-label-secondary / rounded-lg resolve to them. */
 @import 'tailwindcss';
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-2xl: 0;
-  --radius-3xl: 0;
-  
-  --font-sans: 'IBM Plex Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
-  --font-serif: 'Playfair Display', serif;
+@theme {
+  /* ---- Color: iOS dark system palette (Apple HIG "Color" spec) ---- */
+  --color-bg:            #000000;                    /* systemBackground */
+  --color-bg-secondary:  #1C1C1E;                    /* secondarySystemGroupedBackground */
+  --color-bg-tertiary:   #2C2C2E;                    /* tertiarySystemGroupedBackground */
+  --color-fill:          rgba(120, 120, 128, 0.36);  /* systemFill */
+  --color-fill-secondary:rgba(120, 120, 128, 0.24);
+  --color-separator:     rgba(84, 84, 88, 0.6);
+  --color-label:         #FFFFFF;
+  --color-label-secondary: rgba(235, 235, 245, 0.6);
+  --color-label-tertiary:  rgba(235, 235, 245, 0.3);
+  --color-tint:          #0A84FF;  /* systemBlue (dark). Shazam's brand blue is #0088FF — swap here if you want exact brand match. */
+  --color-success:       #30D158;
+  --color-destructive:   #FF453A;
+  --color-orange:        #FF9F0A;  /* waveform hot end */
+
+  /* ---- Radius: iOS corner scale ---- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;   /* cards, grouped cells */
+  --radius-xl: 22px;   /* sheets, large tiles */
+
+  /* ---- Type: SF Pro resolves natively on Apple devices; fallbacks elsewhere. ----
+     Apple does not license SF Pro for web self-hosting, so the system stack is the
+     correct (and only legal) way to get it. On Miles's iPhone / Safari this IS SF Pro. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter", system-ui, sans-serif;
 }
 
-:root {
-  /* Carbon Design System - Gray 100 Theme */
-  --background: #161616;
-  --foreground: #f4f4f4;
-  --card: #262626;
-  --card-foreground: #f4f4f4;
-  --popover: #262626;
-  --popover-foreground: #f4f4f4;
-  --primary: #0f62fe;
-  --primary-foreground: #ffffff;
-  --secondary: #393939;
-  --secondary-foreground: #f4f4f4;
-  --muted: #393939;
-  --muted-foreground: #c6c6c6;
-  --accent: #393939;
-  --accent-foreground: #f4f4f4;
-  --destructive: #fa4d56;
-  --destructive-foreground: #ffffff;
-  --border: #393939;
-  --input: #393939;
-  --ring: #0f62fe;
-  --radius: 0;
-}
+/* ---- iOS text styles (size / line-height / weight from HIG typography table) ----
+   Utilities rather than Tailwind text-* so the scale is named the way the HIG names it. */
+.t-large-title { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: 0.4px; }
+.t-title1      { font-size: 28px; line-height: 34px; font-weight: 700; letter-spacing: 0.36px; }
+.t-title2      { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: 0.35px; }
+.t-title3      { font-size: 20px; line-height: 25px; font-weight: 600; letter-spacing: 0.38px; }
+.t-headline    { font-size: 17px; line-height: 22px; font-weight: 600; letter-spacing: -0.41px; }
+.t-body        { font-size: 17px; line-height: 22px; font-weight: 400; letter-spacing: -0.41px; }
+.t-callout     { font-size: 16px; line-height: 21px; font-weight: 400; letter-spacing: -0.32px; }
+.t-subheadline { font-size: 15px; line-height: 20px; font-weight: 400; letter-spacing: -0.24px; }
+.t-footnote    { font-size: 13px; line-height: 18px; font-weight: 400; letter-spacing: -0.08px; }
+.t-caption1    { font-size: 12px; line-height: 16px; font-weight: 400; }
+.t-caption2    { font-size: 11px; line-height: 13px; font-weight: 400; letter-spacing: 0.07px; }
+.t-display     { font-size: 44px; line-height: 1.02; font-weight: 800; letter-spacing: -0.02em; } /* song-name reveal */
+.tabular       { font-variant-numeric: tabular-nums; }
 
 html, body, #root {
   height: 100%;
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--color-bg);
+  color: var(--color-label);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
-* {
-  border-color: var(--border);
-  border-radius: 0 !important;
+* { border-color: var(--color-separator); }
+
+/* Visible keyboard focus — iOS-style ring; :focus-visible keeps it off taps. */
+:focus-visible {
+  outline: 2px solid var(--color-tint);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
-/* Hide scrollbar for clean app feel */
-::-webkit-scrollbar {
-  width: 0px;
-  background: transparent;
+::-webkit-scrollbar { width: 0; background: transparent; }
+
+/* Liquid-Glass-adjacent surface for the floating tab bar and overlays. */
+.glass {
+  background: rgba(28, 28, 30, 0.72);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
 }
 
-/* Illuminated display serif — for the song title reveal & result hero */
-.font-serif {
-  font-family: var(--font-serif);
-}
+/* Signature "illuminated" text — kept from the Carbon version. */
+.text-glow      { text-shadow: 0 0 24px rgba(255,255,255,0.45), 0 0 8px rgba(255,255,255,0.35); }
+.text-glow-tint { text-shadow: 0 0 20px rgba(10,132,255,0.65), 0 0 6px rgba(10,132,255,0.5); }
 
-/* "Illuminated" text — soft glow halo behind large display text (version 4 look) */
-.text-glow {
-  text-shadow: 0 0 24px rgba(255, 255, 255, 0.45), 0 0 8px rgba(255, 255, 255, 0.35);
-}
+/* Screen-reader-only utility (Tailwind's sr-only exists, this keeps it explicit). */
+.visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 
-.text-glow-blue {
-  text-shadow: 0 0 20px rgba(15, 98, 254, 0.65), 0 0 6px rgba(15, 98, 254, 0.5);
+/* Reduced motion: framer-motion checks useReducedMotion(); this covers CSS animations. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

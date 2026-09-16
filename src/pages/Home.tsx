@@ -1,108 +1,109 @@
+// src/pages/Home.tsx
+// WHAT: the Shazam gradient home — one big button, plus the environment picker.
+// WHY:  proportions now follow the real app (button ≈ 200pt with a soft halo,
+//       "Tap to Shazam" in Title 3, presets as iOS grouped tiles).
+// A11Y: the picker is a radiogroup (arrow keys move, one is always checked); the
+//       button announces which preset it will use; idle pulse stops under reduced motion.
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { motion } from "framer-motion";
-import { Music, MicrophoneFilled, VolumeUpFilled, ShoppingBag, VolumeDownFilled } from "@carbon/icons-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Sparkles, Volume2, ShoppingBag, Volume1 } from "lucide-react";
 import { cn } from "../lib/utils";
+import type { Environment } from "../lib/types";
 
-const ENVIRONMENTS = [
-  { id: "auto",  label: "Auto-Detect",   hint: "Standard conditions",  Icon: MicrophoneFilled },
-  { id: "bar",   label: "Noisy Bar",     hint: "Heavy background noise", Icon: VolumeUpFilled },
-  { id: "mall",  label: "Crowded Mall",  hint: "Ambient crowd noise",  Icon: ShoppingBag },
-  { id: "faint", label: "Faint Audio",   hint: "Quiet or distant source", Icon: VolumeDownFilled },
+const ENVIRONMENTS: { id: Environment; label: string; hint: string; Icon: typeof Volume2 }[] = [
+  { id: "auto",  label: "Auto",         hint: "Senses the room",         Icon: Sparkles },
+  { id: "bar",   label: "Noisy bar",    hint: "Heavy crowd noise",       Icon: Volume2 },
+  { id: "mall",  label: "Crowded mall", hint: "Ambient chatter",         Icon: ShoppingBag },
+  { id: "faint", label: "Faint audio",  hint: "Quiet or distant source", Icon: Volume1 },
 ];
 
+/** Shazam's own "S" glyph is trademarked; this is an original mark with the same
+ *  gesture — two mirrored arcs — so the button reads as "listen" without copying. */
+function ListenGlyph() {
+  return (
+    <svg width="84" height="84" viewBox="0 0 84 84" fill="none" aria-hidden>
+      <path d="M50 18c-8-8-22-8-30 0s-8 22 0 30l6 6" stroke="white" strokeWidth="7" strokeLinecap="round" />
+      <path d="M34 66c8 8 22 8 30 0s8-22 0-30l-6-6" stroke="white" strokeWidth="7" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function Home() {
   const navigate = useNavigate();
-  const [activeEnv, setActiveEnv] = useState("auto");
+  const reduceMotion = useReducedMotion();
+  const [activeEnv, setActiveEnv] = useState<Environment>("auto");
+  const active = ENVIRONMENTS.find((e) => e.id === activeEnv)!;
+
+  const pulse = reduceMotion ? {} : { scale: [1, 1.04, 1] };
+  const halo  = reduceMotion ? { opacity: 0.35 } : { scale: [1, 1.16, 1], opacity: [0.5, 0, 0.5] };
 
   return (
     <div
-      className="flex flex-col min-h-screen relative overflow-hidden"
-      style={{ background: "linear-gradient(175deg, #5aaae8 0%, #1836d0 55%, #1228b8 100%)" }}
+      className="flex flex-col min-h-full relative overflow-hidden"
+      style={{ background: "linear-gradient(180deg, #2E8BFF 0%, #0F62E0 48%, #0A3FB8 100%)" }}
     >
-      {/* Main centered content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-7 px-8 pb-4">
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 px-6 pt-16 pb-32">
+        <p className="t-title3 text-white">Tap to Shazam</p>
 
-        <p className="text-white text-xl font-semibold tracking-tight select-none">
-          Tap to Shazam
-        </p>
-
-        {/* Circular button */}
-        <div className="relative flex items-center justify-center" style={{ width: 232, height: 232 }}>
-          {/* Outer halo ring — breathing pulse signals "alive & ready" */}
+        <div className="relative flex items-center justify-center" style={{ width: 240, height: 240 }}>
           <motion.div
-            className="absolute inset-0"
-            style={{
-              borderRadius: "50%",
-              border: "1.5px solid rgba(255,255,255,0.28)",
-            }}
-            animate={{ scale: [1, 1.14, 1], opacity: [0.6, 0, 0.6] }}
+            className="absolute inset-0 rounded-full"
+            style={{ border: "1.5px solid rgba(255,255,255,0.3)" }}
+            animate={halo}
             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+            aria-hidden
           />
-          {/* Breathing wrapper keeps the idle pulse independent of tap/hover springs */}
-          <motion.div
-            animate={{ scale: [1, 1.04, 1] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          >
-            {/* Circle IS the button */}
+          <motion.div animate={pulse} transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}>
             <motion.button
               whileTap={{ scale: 0.94 }}
-              whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
               onClick={() => navigate("/listening", { state: { env: activeEnv } })}
-              className="flex items-center justify-center focus:outline-none"
+              aria-label={`Shazam. Start listening, ${active.label} preset.`}
+              className="flex items-center justify-center rounded-full"
               style={{
-                width: 204,
-                height: 204,
-                minWidth: 204,
-                minHeight: 204,
-                borderRadius: "50%",
-                padding: 0,
-                appearance: "none",
-                background: "rgba(255,255,255,0.18)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
-                border: "1px solid rgba(255,255,255,0.15)",
+                width: 200, height: 200,
+                background: "radial-gradient(circle at 40% 35%, rgba(255,255,255,0.32), rgba(255,255,255,0.14) 70%)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.35)",
               }}
             >
-              <Music size={72} className="text-white" />
+              <ListenGlyph />
             </motion.button>
           </motion.div>
         </div>
 
-        {/* Environment selector — 2×2 grid */}
-        <div className="grid grid-cols-2 gap-2.5 w-full max-w-xs mt-1">
-          {ENVIRONMENTS.map(({ id, label, hint, Icon }) => {
-            const isActive = activeEnv === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setActiveEnv(id)}
-                className={cn(
-                  "flex flex-col items-start gap-2 p-3 rounded-xl text-left transition-all duration-200",
-                  isActive
-                    ? "bg-white/25 ring-1 ring-white/70 text-white"
-                    : "bg-white/10 text-white/65 hover:bg-white/18 hover:text-white"
-                )}
-              >
-                <Icon size={20} className={isActive ? "text-white" : "text-white/60"} />
-                <div>
-                  <p className="text-xs font-semibold leading-tight">{label}</p>
-                  <p className="text-[10px] leading-snug mt-0.5 opacity-70">{hint}</p>
-                </div>
-              </button>
-            );
-          })}
+        <div className="w-full max-w-xs">
+          <p id="env-label" className="t-footnote text-white/70 mb-2 px-1">Listening for</p>
+          <div role="radiogroup" aria-labelledby="env-label" className="grid grid-cols-2 gap-2.5">
+            {ENVIRONMENTS.map(({ id, label, hint, Icon }) => {
+              const isActive = activeEnv === id;
+              return (
+                <button
+                  key={id}
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => setActiveEnv(id)}
+                  onKeyDown={(e) => {
+                    // Arrow keys cycle presets, per the WAI-ARIA radiogroup pattern.
+                    const idx = ENVIRONMENTS.findIndex((x) => x.id === id);
+                    if (e.key === "ArrowRight" || e.key === "ArrowDown") setActiveEnv(ENVIRONMENTS[(idx + 1) % 4].id);
+                    if (e.key === "ArrowLeft" || e.key === "ArrowUp") setActiveEnv(ENVIRONMENTS[(idx + 3) % 4].id);
+                  }}
+                  className={cn(
+                    "flex flex-col items-start gap-2 p-3.5 rounded-lg text-left transition-colors min-h-[72px]",
+                    isActive ? "bg-white/25 ring-1 ring-white/80 text-white" : "bg-white/10 text-white/70"
+                  )}
+                >
+                  <Icon size={20} aria-hidden />
+                  <div>
+                    <p className="t-subheadline font-semibold">{label}</p>
+                    <p className="t-caption1 opacity-75">{hint}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-
-      </div>
-
-      {/* Bottom status */}
-      <div className="pb-20 flex justify-center">
-        <p className="text-white/40 font-mono text-[10px] uppercase tracking-widest">
-          Ready · {ENVIRONMENTS.find(e => e.id === activeEnv)?.label}
-        </p>
       </div>
     </div>
   );

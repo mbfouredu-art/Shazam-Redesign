@@ -35,16 +35,14 @@ pnpm format   # oxfmt
 
 ## Design system
 
-- **Theme:** Carbon Design System, **Gray 100** dark. Tokens defined in `src/index.css` (`--background #161616`, `--card #262626`, `--border #393939`, `--muted-foreground #c6c6c6`, success `#24a148`, destructive `#fa4d56`).
-- **Accent:** Carbon Blue 60 `#0f62fe` — the single accent color.
-- **Corners:** sharp everywhere — enforced by a global `* { border-radius: 0 !important }`. Round shapes (e.g. the Home button) use inline `border-radius: 50%`.
-- **Type:** IBM Plex Sans (`--font-sans`), IBM Plex Mono (`--font-mono`), and **Playfair Display** (`--font-serif`, `.font-serif`) for the illuminated song title. All loaded via one Google Fonts `@import` at the top of `src/index.css`.
-- **"Illuminated" text:** `.text-glow` (white halo) and `.text-glow-blue` (blue halo) utilities in `src/index.css` — used by the `LISTENING…` header, the large transcript words, and the song-name reveal / result title.
-- **Signature motion:** Home button idle breathing pulse → blue→orange audio-reactive waveform on Listening → full-screen glowing song-name reveal that leads into the Result page.
+- **Base:** Apple iOS 26 (dark) + SF Pro via the system font stack. Tokens in `src/index.css` `@theme`: `bg` #000, `bg-secondary` #1C1C1E, `tint` #0A84FF (swap to Shazam brand #0088FF if wanted), iOS radius scale 8/12/16/22, HIG text styles as `.t-*` utilities.
+- **Figma:** build against Apple's official *iOS and iPadOS 26* UI kit (Figma Community 1527721578857867021). Icons: SF Symbols in Figma, lucide in code.
+- **Kept from the Carbon version:** `.text-glow` / `.text-glow-tint`, the breathing button, blue→orange waveform, full-screen reveal. All motion respects `prefers-reduced-motion`.
+- **Migration note:** the Carbon Gray-100 theme, IBM Plex, `@carbon/icons-react`, and the global `border-radius: 0` are gone. They were the loudest "not Shazam" tells.
 
 ## What's real vs mocked
 
-Everything runs on hardcoded data; there is **no audio capture, API, auth, or persistence**. Local UI state (edited words, added tags, favorites) resets on navigation.
+Mic capture and the waveform are real when an engine other than `mock` is selected (`src/lib/audio/useMicrophone.ts`). Matching, auth, and persistence are still mocked; the Supabase schema is in `supabase/migrations/0001_init.sql` and the engine plan in `docs/RECOGNITION.md`. Round-trip workflow with Figma Make: `docs/FIGMA-MAKE-ROUNDTRIP.md`.
 
 | Area | Mock (file) | Needs |
 | --- | --- | --- |
