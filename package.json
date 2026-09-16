@@ -1,5 +1,5 @@
 {
-  "name": "figma-make-app",
+  "name": "shazam-redesign",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,7 +10,6 @@
     "format": "oxfmt"
   },
   "dependencies": {
-    "@carbon/icons-react": "^11.87.0",
     "clsx": "^2.1.1",
     "framer-motion": "^13.2.0",
     "lucide-react": "^1.40.0",

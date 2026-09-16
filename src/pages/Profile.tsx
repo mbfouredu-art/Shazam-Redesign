@@ -1,112 +1,74 @@
+// src/pages/Profile.tsx
+// WHAT: Friends feed + My discoveries, as iOS segmented control + grouped lists.
+// WHY:  the feed items now carry environment AND place (when the friend shared it),
+//       which is the social claim of the redesign.
+// A11Y: real tablist/tab/tabpanel; keyboard arrow switching; avatars decorative.
 import { useState } from "react";
-import { Search, UserFollow, Music, Time } from "@carbon/icons-react";
+import { Search, UserPlus, MapPin } from "lucide-react";
+import { cn } from "../lib/utils";
+import { MOCK_FRIENDS_ACTIVITY } from "../lib/data/mock";
+import { ENVIRONMENT_LABEL } from "../lib/types";
 
-const MOCK_FRIENDS_ACTIVITY = [
-  {
-    id: 1,
-    user: { name: "Sarah J.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces" },
-    song: "Blinding Lights",
-    artist: "The Weeknd",
-    time: "2 hours ago",
-    context: "Noisy Bar",
-  },
-  {
-    id: 2,
-    user: { name: "Mike T.", avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&crop=faces" },
-    song: "Inner City Blues",
-    artist: "Kevin Saunderson",
-    time: "5 hours ago",
-    context: "Faint Audio",
-  },
-  {
-    id: 3,
-    user: { name: "Alex R.", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=faces" },
-    song: "Strobe",
-    artist: "deadmau5",
-    time: "Yesterday",
-    context: "Crowded Mall",
-  },
-];
+type Tab = "friends" | "mine";
+const TABS: { id: Tab; label: string }[] = [{ id: "friends", label: "Friends" }, { id: "mine", label: "My discoveries" }];
 
 export function Profile() {
-  const [activeTab, setActiveTab] = useState<"friends" | "mine">("friends");
+  const [tab, setTab] = useState<Tab>("friends");
 
   return (
-    <div className="flex flex-col min-h-full bg-[#161616] text-[#f4f4f4] font-sans">
-      
-      {/* Header */}
-      <div className="px-4 py-6 border-b border-[#393939] flex items-center justify-between">
-        <h1 className="text-2xl font-light tracking-tight">Social</h1>
-        <button className="text-[#0f62fe] hover:underline flex items-center gap-2 text-sm">
-          <UserFollow size={16} />
-          Add Friend
+    <div className="flex flex-col min-h-full bg-bg pb-32">
+      <div className="px-5 pt-14 pb-3 flex items-end justify-between">
+        <h1 className="t-large-title">Friends</h1>
+        <button className="flex items-center gap-1.5 text-tint t-body min-h-11 px-1">
+          <UserPlus size={18} aria-hidden /> Add
         </button>
       </div>
 
-      {/* Carbon Tabs */}
-      <div className="flex border-b border-[#393939]">
-        <button 
-          onClick={() => setActiveTab("friends")}
-          className={`flex-1 py-3 text-sm transition-colors border-b-2 ${activeTab === "friends" ? "border-[#0f62fe] text-[#f4f4f4] font-medium" : "border-transparent text-[#c6c6c6] hover:text-[#f4f4f4] hover:bg-[#262626]"}`}
-        >
-          Friend Activity
-        </button>
-        <button 
-          onClick={() => setActiveTab("mine")}
-          className={`flex-1 py-3 text-sm transition-colors border-b-2 ${activeTab === "mine" ? "border-[#0f62fe] text-[#f4f4f4] font-medium" : "border-transparent text-[#c6c6c6] hover:text-[#f4f4f4] hover:bg-[#262626]"}`}
-        >
-          My Discoveries
-        </button>
+      <div className="px-5 mb-4">
+        <div role="tablist" aria-label="Feed" className="flex rounded-md bg-fill-secondary p-0.5">
+          {TABS.map((t) => (
+            <button key={t.id} role="tab" id={`tab-${t.id}`} aria-selected={tab === t.id} aria-controls={`panel-${t.id}`}
+              tabIndex={tab === t.id ? 0 : -1}
+              onClick={() => setTab(t.id)}
+              onKeyDown={(e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") setTab(tab === "friends" ? "mine" : "friends"); }}
+              className={cn("flex-1 h-9 rounded-[7px] t-subheadline font-semibold transition-colors", tab === t.id ? "bg-bg-tertiary text-label shadow" : "text-label-secondary")}>
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Feed (Carbon Data Table / List Style) */}
-      <div className="flex-1 overflow-y-auto">
-        {activeTab === "friends" ? (
-          <div className="flex flex-col">
-            {MOCK_FRIENDS_ACTIVITY.map((activity) => (
-              <div key={activity.id} className="p-4 border-b border-[#393939] bg-[#161616] hover:bg-[#262626] transition-colors group">
-                
-                {/* User Row */}
-                <div className="flex items-center gap-3 mb-3">
-                  <img src={activity.user.avatar} alt={activity.user.name} className="size-8 object-cover border border-[#393939]" />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-[#0f62fe]">{activity.user.name}</span>
-                    <span className="text-xs text-[#8d8d8d] font-mono flex items-center gap-1">
-                      <Time size={12} /> {activity.time}
-                    </span>
-                  </div>
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="px-5">
+        {tab === "friends" ? (
+          <ul className="rounded-xl bg-bg-secondary divide-y divide-separator">
+            {MOCK_FRIENDS_ACTIVITY.map((a) => (
+              <li key={a.id} className="flex gap-3 p-4">
+                <img src={a.user.avatarUrl} alt="" className="size-10 rounded-full object-cover shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="t-subheadline">
+                    <span className="font-semibold">{a.user.name}</span>
+                    <span className="text-label-secondary"> found </span>
+                    <span className="font-semibold">{a.song.title}</span>
+                    <span className="text-label-secondary"> by {a.song.artist}</span>
+                  </p>
+                  <p className="t-footnote text-label-secondary mt-1 flex items-center gap-1 flex-wrap">
+                    <span>{a.timeLabel}</span>
+                    <span aria-hidden>·</span>
+                    <span>{ENVIRONMENT_LABEL[a.environment]}</span>
+                    {a.placeLabel && (<><span aria-hidden>·</span><MapPin size={12} aria-hidden /><span>{a.placeLabel}</span></>)}
+                  </p>
                 </div>
-                
-                {/* Track Row */}
-                <div className="bg-[#262626] group-hover:bg-[#393939] p-4 border-l-2 border-[#0f62fe] transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Music size={16} className="text-[#8d8d8d]" />
-                        <h4 className="text-base font-semibold text-[#f4f4f4]">{activity.song}</h4>
-                      </div>
-                      <p className="text-sm text-[#c6c6c6] ml-6">{activity.artist}</p>
-                    </div>
-                    
-                    {/* Context Tag */}
-                    <div className="bg-[#161616] border border-[#393939] px-2 py-1 text-[10px] uppercase font-mono text-[#c6c6c6] whitespace-nowrap">
-                      {activity.context}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-            <Search size={32} className="text-[#8d8d8d] mb-4" />
-            <h3 className="text-base font-medium text-[#f4f4f4] mb-2">No discoveries yet</h3>
-            <p className="text-sm text-[#c6c6c6]">Head to the Discover tab to find your first song.</p>
+          <div className="rounded-xl bg-bg-secondary flex flex-col items-center text-center px-6 py-14">
+            <Search size={28} className="text-label-tertiary mb-3" aria-hidden />
+            <p className="t-headline mb-1">Nothing here yet</p>
+            <p className="t-subheadline text-label-secondary">Songs you Shazam will show up here, with where you heard them.</p>
           </div>
         )}
       </div>
-
     </div>
   );
 }

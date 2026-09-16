@@ -1,261 +1,206 @@
-import { useState, useEffect, useRef } from "react";
+// src/pages/Listening.tsx
+// WHAT: live listen screen — real-or-mock waveform, editable transcript, song reveal.
+// WHY:  the page no longer owns timers or fake data; it subscribes to a Recognizer
+//       (mock today, Olaf/ShazamKit later) and runs a small state machine:
+//         idle → listening → (match → reveal → /result) | (no-match) | (error)
+//       Transcript edits are collected and passed forward as `corrections` — that's
+//       the crowd-data differentiator, so they must not be decorative.
+// A11Y: aria-live announces status changes and the match; every word is a labelled
+//       button; edit row has a real <label>; no-match and mic-denied get real UI.
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { motion, AnimatePresence } from "framer-motion";
-import { Checkmark, Close } from "@carbon/icons-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Check, X, MicOff, RotateCcw } from "lucide-react";
 import { cn } from "../lib/utils";
+import { getRecognizer, type RecognitionSession } from "../lib/recognition";
+import type { Environment, Song } from "../lib/types";
 
-const MOCK_STREAM = [
-  "I'm", "caught", "up", "in", "the", "middle", "of", "it",
-  "I", "can't", "stop", "the", "feeling", "now"
-];
-
-// The song revealed at the end of the listen — animates full-screen, then leads into /result.
-const REVEAL_TITLE = "Midnight City";
-
-// Environment-aware narrative copy — turns dead wait time into a reassuring,
-// context-specific story (per Shazam's "listening → searching → last try" pattern).
-const STATUS_COPY: Record<string, string[]> = {
-  auto: ["Listening for music…", "Searching…", "Expanding search…", "Locking result…"],
-  bar: ["Filtering crowd noise…", "Isolating melody…", "Matching fingerprint…", "Locking result…"],
-  mall: ["Ducking ambient chatter…", "Following the hook…", "Matching fingerprint…", "Locking result…"],
-  faint: ["Boosting faint signal…", "Sharpening frequencies…", "Matching fingerprint…", "Locking result…"],
+const STATUS_COPY: Record<Environment, string[]> = {
+  auto:  ["Listening…", "Searching…", "Expanding search…", "Almost there…"],
+  bar:   ["Filtering crowd noise…", "Isolating the melody…", "Matching fingerprint…", "Almost there…"],
+  mall:  ["Ducking ambient chatter…", "Following the hook…", "Matching fingerprint…", "Almost there…"],
+  faint: ["Boosting faint signal…", "Sharpening frequencies…", "Matching fingerprint…", "Almost there…"],
 };
 
-interface Word {
-  id: string;
-  text: string;
-  status: "detecting" | "locked" | "editing";
-}
+interface Word { id: string; text: string; original: string; status: "detecting" | "locked" | "editing" }
+type Phase = "listening" | "reveal" | "no-match" | "error";
 
 export function Listening() {
   const navigate = useNavigate();
   const location = useLocation();
-  const env = location.state?.env || "auto";
+  const reduceMotion = useReducedMotion();
+  const env: Environment = location.state?.env ?? "auto";
 
+  const [phase, setPhase] = useState<Phase>("listening");
+  const [errorMsg, setErrorMsg] = useState("");
   const [words, setWords] = useState<Word[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [matchProgress, setMatchProgress] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
-  const [levels, setLevels] = useState<number[]>(() => Array.from({ length: 28 }, () => 0.2));
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState(0);
+  const [levels, setLevels] = useState<number[]>(() => Array(28).fill(0.1));
+  const [song, setSong] = useState<Song | null>(null);
+  const sessionRef = useRef<RecognitionSession | null>(null);
+  const [attempt, setAttempt] = useState(0); // bump to retry
 
-  const phrases = STATUS_COPY[env] || STATUS_COPY.auto;
-  const phraseIndex = Math.min(
-    Math.floor((matchProgress / 100) * phrases.length),
-    phrases.length - 1
-  );
-  const statusPhrase = isFinished ? phrases[phrases.length - 1] : phrases[phraseIndex];
+  const phrases = STATUS_COPY[env];
+  const statusPhrase = phrases[Math.min(Math.floor((progress / 100) * phrases.length), phrases.length - 1)];
 
-  // Faux audio level — drives the reactive waveform while listening.
+  // Subscribe to the recognizer. Cleanup stops the mic when the user leaves.
   useEffect(() => {
-    if (isFinished) return;
-    const interval = setInterval(() => {
-      setLevels(prev => prev.map(() => 0.15 + Math.random() * 0.85));
-    }, 110);
-    return () => clearInterval(interval);
-  }, [isFinished]);
+    let cancelled = false;
+    setPhase("listening"); setWords([]); setProgress(0); setSong(null);
+    getRecognizer()
+      .start({
+        environment: env,
+        onEvent: (e) => {
+          if (cancelled) return;
+          switch (e.type) {
+            case "level": setLevels(e.levels); break;
+            case "progress": setProgress(e.value); break;
+            case "transcript":
+              // Merge: keep user edits, append new words as "detecting".
+              setWords((prev) => e.words.map((t, i) => prev[i] ?? { id: `w-${i}`, text: t, original: t, status: "detecting" }));
+              break;
+            case "match":
+              setSong(e.song); setPhase("reveal");
+              break;
+            case "no-match": setPhase("no-match"); break;
+            case "error": setErrorMsg(e.message); setPhase("error"); break;
+          }
+        },
+      })
+      .then((s) => { if (cancelled) s.stop(); else sessionRef.current = s; })
+      .catch((err: { message?: string }) => { setErrorMsg(err.message ?? "Couldn't start listening"); setPhase("error"); });
+    return () => { cancelled = true; sessionRef.current?.stop(); };
+  }, [env, attempt]);
 
+  // Words settle from "detecting" (glowing) to "locked" after 2 s unless being edited.
   useEffect(() => {
-    let index = 0;
-    const interval = setInterval(() => {
-      if (index < MOCK_STREAM.length) {
-        const newWord = { id: `w-${index}`, text: MOCK_STREAM[index], status: "detecting" as const };
-        setWords(prev => [...prev, newWord]);
-        index++;
-        setMatchProgress(prev => Math.min(prev + (100 / MOCK_STREAM.length), 100));
-      } else {
-        clearInterval(interval);
-        setIsFinished(true);
-        setTimeout(() => {
-          navigate("/result");
-        }, 1500);
-      }
-    }, 600);
-    return () => clearInterval(interval);
-  }, [navigate]);
+    const t = setTimeout(() => setWords((p) => p.map((w) => (w.status === "detecting" ? { ...w, status: "locked" } : w))), 2000);
+    return () => clearTimeout(t);
+  }, [words.length]);
 
+  // After the reveal, hand everything to /result via router state.
   useEffect(() => {
-    const timeouts = words.map((w, i) => {
-      if (w.status === "detecting") {
-        return setTimeout(() => {
-          setWords(prev => {
-            const copy = [...prev];
-            if (copy[i] && copy[i].status !== "editing") {
-              copy[i] = { ...copy[i], status: "locked" };
-            }
-            return copy;
-          });
-        }, 2000);
-      }
-      return null;
-    });
-    return () => { timeouts.forEach(t => t && clearTimeout(t)); };
-  }, [words]);
+    if (phase !== "reveal" || !song) return;
+    const corrections = words.filter((w) => w.text !== w.original).map((w) => ({ from: w.original, to: w.text }));
+    const t = setTimeout(() => navigate("/result", { state: { song, env, corrections } }), reduceMotion ? 600 : 1600);
+    return () => clearTimeout(t);
+  }, [phase, song, words, env, navigate, reduceMotion]);
 
-  const handleWordClick = (id: string, currentText: string) => {
-    setEditingId(id);
-    setEditValue(currentText);
-    setWords(prev => prev.map(w => w.id === id ? { ...w, status: "editing" } : w));
-  };
-
-  const handleSaveEdit = (id: string) => {
-    setWords(prev => prev.map(w => w.id === id ? { ...w, text: editValue, status: "locked" } : w));
-    setEditingId(null);
-  };
-
-  const handleCancelEdit = (id: string) => {
-    setWords(prev => prev.map(w => w.id === id ? { ...w, status: "locked" } : w));
-    setEditingId(null);
-  };
+  const startEdit = (w: Word) => { setEditingId(w.id); setEditValue(w.text); setWords((p) => p.map((x) => (x.id === w.id ? { ...x, status: "editing" } : x))); };
+  const saveEdit = useCallback((id: string) => { setWords((p) => p.map((x) => (x.id === id ? { ...x, text: editValue.trim() || x.text, status: "locked" } : x))); setEditingId(null); }, [editValue]);
+  const cancelEdit = (id: string) => { setWords((p) => p.map((x) => (x.id === id ? { ...x, status: "locked" } : x))); setEditingId(null); };
 
   return (
-    <div className="flex flex-col min-h-full px-4 pt-20 pb-8 bg-[#161616] text-[#f4f4f4] relative">
-      
-      {/* Full-screen illuminated song-name reveal — blurs the transcription behind it,
-          the title glows in, then the effect leads straight into /result. */}
+    <div className="flex flex-col min-h-full px-5 pt-14 pb-32 bg-bg text-label relative">
+      {/* Song-name reveal — the one orchestrated moment. */}
       <AnimatePresence>
-        {isFinished && (
+        {phase === "reveal" && song && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4 }}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#161616]/75 backdrop-blur-2xl px-6"
+            role="status" aria-live="assertive"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg/80 backdrop-blur-2xl px-6 text-center"
           >
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="text-[10px] uppercase tracking-[0.4em] text-[#0f62fe] font-mono mb-6 text-glow-blue"
-            >
-              Match Found
-            </motion.span>
+            <span className="t-footnote text-tint text-glow-tint mb-4">Match found</span>
             <motion.h1
-              initial={{ opacity: 0, scale: 0.82, filter: "blur(10px)" }}
+              initial={reduceMotion ? {} : { opacity: 0, scale: 0.85, filter: "blur(10px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-              className="font-mono font-bold uppercase text-5xl leading-[1.05] tracking-tight text-center text-white text-glow"
+              className="t-display text-glow"
             >
-              {REVEAL_TITLE}
+              {song.title}
             </motion.h1>
+            <p className="t-title3 text-label-secondary mt-3">{song.artist}</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-20 right-4 text-sm text-[#c6c6c6] hover:text-[#f4f4f4] hover:underline"
-      >
-        Cancel
-      </button>
-
-      <div className="flex flex-col items-center pb-4 mb-4">
-        <div className="flex items-center gap-2">
-          <svg className="animate-spin text-[#0f62fe]" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
-            <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <h2 className="text-sm font-mono font-medium uppercase tracking-[0.25em] text-[#0f62fe] text-glow-blue">
-            Listening...
-          </h2>
-        </div>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="t-headline text-tint text-glow-tint flex items-center gap-2">
+          <span className="inline-block size-2 rounded-full bg-tint animate-pulse" aria-hidden />
+          Listening
+        </h1>
+        <button onClick={() => navigate("/")} className="t-body text-tint min-h-11 px-2">Cancel</button>
       </div>
 
-      <p className="text-xs text-[#8d8d8d] font-mono uppercase tracking-wide mb-6 leading-relaxed">
-        [Env: {env}] Real-time transcription active. Tap to correct.
-      </p>
-
-      {/* Audio-reactive visual — the orb "grows in" from the tapped button for continuity,
-          then pulses a live waveform tinted blue→orange while listening. */}
-      <motion.div
-        initial={{ scale: 0.4, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="mb-8"
-      >
-        <div
-          className="w-full flex items-center justify-center gap-[3px] h-24 px-2 border border-[#393939] bg-[#262626] overflow-hidden"
-          aria-hidden
-        >
+      {/* Waveform + status. aria-live so VoiceOver hears the phase changes. */}
+      <div className="rounded-xl bg-bg-secondary p-4 mb-6">
+        <div className="flex items-end justify-center gap-[3px] h-20" aria-hidden>
           {levels.map((lvl, i) => (
-            <motion.div
-              key={i}
-              className="flex-1"
+            <motion.div key={i} className="flex-1 rounded-full min-w-[2px]"
               animate={{ height: `${Math.round(lvl * 100)}%` }}
-              transition={{ duration: 0.11, ease: "easeOut" }}
-              style={{
-                minWidth: 2,
-                background: "linear-gradient(180deg, #ff832b 0%, #0f62fe 100%)",
-              }}
-            />
+              transition={{ duration: reduceMotion ? 0 : 0.11, ease: "easeOut" }}
+              style={{ background: "linear-gradient(180deg, var(--color-orange) 0%, var(--color-tint) 100%)" }} />
           ))}
         </div>
-        <div className="flex justify-between text-xs mt-2">
-          <motion.span
-            key={statusPhrase}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-[#c6c6c6] font-mono"
-          >
-            {statusPhrase}
-          </motion.span>
-          <span className="font-mono text-[#8d8d8d]">{Math.round(matchProgress)}%</span>
+        <div className="flex justify-between items-center mt-3" aria-live="polite">
+          <span className="t-subheadline text-label-secondary">{phase === "listening" ? statusPhrase : ""}</span>
+          <span className="t-footnote text-label-tertiary tabular">{Math.round(progress)}%</span>
         </div>
-      </motion.div>
-
-      <div className="mb-2">
-        <span className="text-[10px] uppercase font-semibold tracking-wider text-[#8d8d8d]">Live Transcription</span>
       </div>
 
-      <div className="flex-1 bg-[#262626] border border-[#393939] p-6 flex flex-wrap gap-x-4 gap-y-3 content-start items-center overflow-y-auto">
+      {/* Non-happy paths — these were missing entirely before. */}
+      {phase === "no-match" && (
+        <div role="alert" className="rounded-xl bg-bg-secondary p-5 mb-6">
+          <p className="t-headline mb-1">No match yet</p>
+          <p className="t-subheadline text-label-secondary mb-4">
+            Try getting closer to the speaker, or search by the words you caught below.
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => setAttempt((a) => a + 1)} className="flex items-center gap-2 h-11 px-4 rounded-md bg-tint text-white t-subheadline font-semibold">
+              <RotateCcw size={16} aria-hidden /> Listen again
+            </button>
+            <button onClick={() => navigate("/result", { state: { lyricQuery: words.map((w) => w.text).join(" "), env } })}
+              disabled={words.length === 0}
+              className="h-11 px-4 rounded-md bg-fill t-subheadline font-semibold disabled:opacity-40">
+              Search by lyrics
+            </button>
+          </div>
+        </div>
+      )}
+      {phase === "error" && (
+        <div role="alert" className="rounded-xl bg-bg-secondary p-5 mb-6 flex gap-3">
+          <MicOff className="text-destructive shrink-0" aria-hidden />
+          <div>
+            <p className="t-headline mb-1">Microphone unavailable</p>
+            <p className="t-subheadline text-label-secondary">{errorMsg}. Allow the mic in Settings, then try again.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Transcript */}
+      <h2 className="t-footnote text-label-secondary mb-2 px-1">Words we're hearing. Tap one to fix it.</h2>
+      <div className="flex-1 rounded-xl bg-bg-secondary p-5 flex flex-wrap gap-x-3 gap-y-2 content-start items-center min-h-40" role="list" aria-label="Live transcript">
         <AnimatePresence>
           {words.map((word) => (
-            <motion.div
-              key={word.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="relative"
-            >
+            <motion.div key={word.id} role="listitem" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               {word.status === "editing" ? (
-                <div className="flex items-center bg-[#161616] border border-[#0f62fe] h-12">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={editValue}
+                <div className="flex items-center rounded-md bg-bg ring-1 ring-tint h-12 overflow-hidden">
+                  <label htmlFor={`edit-${word.id}`} className="visually-hidden">Correct the word {word.original}</label>
+                  <input id={`edit-${word.id}`} type="text" value={editValue} autoFocus
                     onChange={(e) => setEditValue(e.target.value)}
-                    autoFocus
-                    className="bg-transparent text-[#f4f4f4] px-3 w-40 text-2xl outline-none"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveEdit(word.id);
-                      if (e.key === 'Escape') handleCancelEdit(word.id);
-                    }}
-                  />
-                  <button onClick={() => handleSaveEdit(word.id)} className="w-12 h-12 flex items-center justify-center bg-[#262626] hover:bg-[#393939] border-l border-[#393939] text-[#24a148]">
-                    <Checkmark size={20} />
-                  </button>
-                  <button onClick={() => handleCancelEdit(word.id)} className="w-12 h-12 flex items-center justify-center bg-[#262626] hover:bg-[#393939] border-l border-[#393939] text-[#fa4d56]">
-                    <Close size={20} />
-                  </button>
+                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(word.id); if (e.key === "Escape") cancelEdit(word.id); }}
+                    className="bg-transparent px-3 w-36 t-title3 outline-none" />
+                  <button onClick={() => saveEdit(word.id)} aria-label="Confirm correction" className="w-12 h-12 flex items-center justify-center text-success"><Check size={22} aria-hidden /></button>
+                  <button onClick={() => cancelEdit(word.id)} aria-label="Cancel correction" className="w-12 h-12 flex items-center justify-center text-destructive"><X size={22} aria-hidden /></button>
                 </div>
               ) : (
-                <button
-                  onClick={() => handleWordClick(word.id, word.text)}
-                  className={cn(
-                    "text-3xl font-medium transition-all duration-300",
-                    word.status === "detecting"
-                      ? "text-white text-glow"
-                      : "text-[#8d8d8d] hover:text-[#f4f4f4]"
-                  )}
-                >
+                <button onClick={() => startEdit(word)} aria-label={`Edit word ${word.text}`} disabled={editingId !== null}
+                  className={cn("t-title2 min-h-11 px-1 rounded-sm transition-colors",
+                    word.status === "detecting" ? "text-label text-glow" : "text-label-secondary",
+                    word.text !== word.original && "underline decoration-tint decoration-2 underline-offset-4")}>
                   {word.text}
                 </button>
               )}
             </motion.div>
           ))}
         </AnimatePresence>
+        {words.length === 0 && phase === "listening" && (
+          <p className="t-subheadline text-label-tertiary">Waiting for vocals…</p>
+        )}
       </div>
-
     </div>
   );
 }

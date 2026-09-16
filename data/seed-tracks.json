@@ -1,0 +1,25 @@
+{
+  "_readme": "20 demo tracks to index in Olaf, taken from Miles's Spotify 'On Repeat' (Sept 2026) so the demo runs on music he actually plays. Spotify streams are DRM-locked and cannot be fingerprinted — buy/own each file (Bandcamp, iTunes, CD rip) and put it in seed-audio/ (git-ignored) named <id>.mp3, then run `olaf store seed-audio/`. `demoEnv` is the listening preset each track is meant to demonstrate; `explicit` flags tracks to skip in a classroom demo.",
+  "tracks": [
+    { "id": "01-isaiah-rashad-aint-givin-up",   "title": "AIN'T GIVIN' UP",                 "artist": "Isaiah Rashad",                 "demoEnv": "bar",   "explicit": true,  "why": "Vocal-forward rap; transcript demo" },
+    { "id": "02-jpegmafia-babygirl",            "title": "babygirl",                        "artist": "JPEGMAFIA",                     "demoEnv": "bar",   "explicit": true,  "why": "Dense, noisy production — fingerprint stress test" },
+    { "id": "03-yg-on-the-low",                 "title": "ON THE LOW",                      "artist": "YG, Tyler, The Creator",        "demoEnv": "bar",   "explicit": true,  "why": "Club playback level" },
+    { "id": "04-dvrst-walk-in-paradise",        "title": "WALK IN PARADISE",                "artist": "DVRST",                         "demoEnv": "bar",   "explicit": true,  "why": "Heavy low end — tests bar-preset frequency handling" },
+    { "id": "05-clipse-so-be-it",               "title": "So Be It",                        "artist": "Clipse, Pusha T, Malice",       "demoEnv": "bar",   "explicit": true,  "why": "Sparse beat + rapid vocals; Whisper mishears reliably" },
+    { "id": "06-isaiah-rashad-wat-u-sed",       "title": "Wat U Sed",                       "artist": "Isaiah Rashad, Doechii, Kal Banx","demoEnv": "bar",  "explicit": true,  "why": "Multiple vocalists — good friends-overlap story" },
+    { "id": "07-kanye-bound-2",                 "title": "Bound 2",                         "artist": "Kanye West",                    "demoEnv": "bar",   "explicit": true,  "why": "Sample-heavy; tests matching from the sampled intro vs. the verse" },
+    { "id": "08-joy-crookes-somebody-to-you",   "title": "Somebody To You",                 "artist": "Joy Crookes",                   "demoEnv": "mall",  "explicit": false, "why": "Retail-radio soul, clean mix" },
+    { "id": "09-kevin-abstract-post-break-up",  "title": "Post Break Up Beauty",            "artist": "Kevin Abstract, Love Spells",   "demoEnv": "mall",  "explicit": true,  "why": "Mid-tempo pop, mall PA" },
+    { "id": "10-tatsuro-yamashita-sparkle",     "title": "SPARKLE",                         "artist": "Tatsuro Yamashita",             "demoEnv": "mall",  "explicit": false, "why": "Japanese lyrics — transcript editing across languages" },
+    { "id": "11-the-marias-paranoia",           "title": "Paranoia",                        "artist": "The Marías",                    "demoEnv": "mall",  "explicit": false, "why": "Soft vocal over crowd noise" },
+    { "id": "12-dominic-fike-10x-stronger",     "title": "10x Stronger",                    "artist": "Dominic Fike",                  "demoEnv": "mall",  "explicit": false, "why": "Guitar-pop, distinct hook" },
+    { "id": "13-lucky-daye-nowhere-fast",       "title": "Nowhere Fast",                    "artist": "Lucky Daye",                    "demoEnv": "mall",  "explicit": false, "why": "R&B, retail playlist staple" },
+    { "id": "14-omar-apollo-go-away",           "title": "Go Away",                         "artist": "Omar Apollo",                   "demoEnv": "mall",  "explicit": false, "why": "Falsetto vocal — tests pitch-heavy passages" },
+    { "id": "15-blood-orange-champagne-coast",  "title": "Champagne Coast",                 "artist": "Blood Orange",                  "demoEnv": "faint", "explicit": false, "why": "Lo-fi, quiet mix; faint-mode case" },
+    { "id": "16-bennett-coast-being-there",     "title": "Being There",                     "artist": "Bennett Coast",                 "demoEnv": "faint", "explicit": false, "why": "Also the scripted mock reveal — keeps Make and Olaf demos consistent" },
+    { "id": "17-daniel-caesar-disillusioned",   "title": "Disillusioned",                   "artist": "Daniel Caesar, serpentwithfeet","demoEnv": "faint", "explicit": true,  "why": "Very quiet dynamics; sparse peaks" },
+    { "id": "18-night-tapes-humans",            "title": "Humans",                          "artist": "Night Tapes",                   "demoEnv": "faint", "explicit": false, "why": "Dream pop, café playback" },
+    { "id": "19-chezile-favor-colors",          "title": "Favor - A COLORS SHOW",           "artist": "Chezile, COLORS",               "demoEnv": "faint", "explicit": false, "why": "Live one-take vocal — no studio master to match; hard case" },
+    { "id": "20-dal-those-days",                "title": "Those Days",                      "artist": "Dal, Leah Yeger",               "demoEnv": "faint", "explicit": false, "why": "Quiet duet; tests two-voice transcript" }
+  ]
+}
