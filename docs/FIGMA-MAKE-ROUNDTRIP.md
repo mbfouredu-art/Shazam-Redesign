@@ -33,3 +33,12 @@ changes. Conflicts almost always mean Make put data back into a page — move it
 - `main` — always builds (`pnpm build`), always demoable on `mock`.
 - `feat/*` — Fable work (recognition, Supabase, Capacitor).
 - `make/*` — imports from Figma Make.
+
+## Getting Claude's chat work into the repo (no git knowledge needed)
+Claude (in the chat) can write files straight into this folder on the Mac, but cannot run
+git or push. So the loop is:
+1. Claude writes/updates files here.
+2. You open Claude Code in this folder and paste:
+   > Review the uncommitted changes, run `pnpm install` and `pnpm build`, commit them on a
+   > branch named `feat/<short-name>`, push it, and open a PR. Don't merge. Give me the link.
+3. You press **Merge** on GitHub. Figma Make picks up `main` on its next sync.

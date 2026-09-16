@@ -24,20 +24,21 @@ zig build test                 # sanity
 ```
 
 ### Seed the catalog
-Audio is NOT in this repo. Put your own files in `seed-audio/` (git-ignored), named by the
-ids in `data/seed-tracks.json` (e.g. `01-m83-midnight-city.mp3`).
+Audio is NOT in this repo. Spotify streams are DRM-locked, so buy/own each file. Put them
+in `seed-audio/` (git-ignored), named by the ids in `data/seed-tracks.json`
+(e.g. `16-bennett-coast-being-there.mp3`).
 
 ```bash
 # Desktop index — lets you test matching from the CLI before touching the browser
 olaf store seed-audio/
-olaf query seed-audio/02-weeknd-blinding-lights.mp3     # should match itself
+olaf query seed-audio/16-bennett-coast-being-there.mp3   # should match itself
 olaf microphone                                          # live mic match from the laptop
 
 # Browser index — the web build has no database; prints are compiled in as a header
 make mem
 for f in seed-audio/*.mp3; do olaf to_raw "$f"; done
 # olaf_mem writes one header per call; concatenate into the header the wasm build includes
-bin/olaf_mem store olaf_audio_01-m83-midnight-city.raw "01-m83-midnight-city" >  wasm/olaf_fp_ref_mem.h
+bin/olaf_mem store olaf_audio_16-bennett-coast-being-there.raw "16-bennett-coast-being-there" > wasm/olaf_fp_ref_mem.h
 # ...repeat/append for the other 19 (a small shell loop; see the Olaf ESP32 docs for the header layout)
 make web                                                 # emits wasm/*.wasm + *.js
 cp wasm/olaf*.js wasm/olaf*.wasm  <this-repo>/public/olaf/
@@ -69,3 +70,9 @@ so it stays local / on the demo host, not in the public repo.
 Real Shazam catalog, free with an Apple Developer account. Wrap this Vite app with
 Capacitor, add a ShazamKit plugin, and register a third `Recognizer`. Signature generation
 runs on-device; enable the ShazamKit App Service on the App ID in the developer portal.
+
+## 4. If Olaf never gets built
+The demo does not depend on it. Two cheap alternatives for a real "it listens" moment:
+- **AudD** recognition API behind a Supabase edge function (keeps the key off the client).
+- A richer `mock` that rotates through `data/seed-tracks.json` with a pre-written
+  misheard transcript per track, so every tap reveals a different song.
