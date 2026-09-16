@@ -5,12 +5,12 @@
 import type { Song, FriendOverlap, FriendActivity, Place } from "../types";
 
 export const MOCK_SONG: Song = {
-  id: "seed-m83-midnight-city",
-  title: "Midnight City",
-  artist: "M83",
+  id: "16-bennett-coast-being-there",
+  title: "Being There",
+  artist: "Bennett Coast",
   albumArtUrl: "https://images.unsplash.com/photo-1614613535308-eb51bd3d2c17?auto=format&fit=crop&w=400&q=80",
   discoverCount: 12_405_192,
-  communityTags: ["Synthwave", "Night drive", "Nostalgic", "Upbeat"],
+  communityTags: ["Dreamy", "Late night", "Bittersweet", "Bedroom pop"],
 };
 
 /** Demo place — Pittsburgh, near Miles. Real value comes from geolocation + reverse geocode. */
@@ -29,11 +29,11 @@ export const MOCK_FRIEND_OVERLAP: FriendOverlap[] = [
 
 export const MOCK_FRIENDS_ACTIVITY: FriendActivity[] = [
   { id: "a1", user: { name: "Sarah J.", avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces" },
-    song: { title: "Blinding Lights", artist: "The Weeknd" }, timeLabel: "2 hours ago", environment: "bar", placeLabel: "Spirit, Lawrenceville" },
+    song: { title: "Paranoia", artist: "The Marías" }, timeLabel: "2 hours ago", environment: "bar", placeLabel: "Spirit, Lawrenceville" },
   { id: "a2", user: { name: "Mike T.", avatarUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=100&h=100&fit=crop&crop=faces" },
-    song: { title: "Inner City Blues", artist: "Kevin Saunderson" }, timeLabel: "5 hours ago", environment: "faint" },
+    song: { title: "Humans", artist: "Night Tapes" }, timeLabel: "5 hours ago", environment: "faint" },
   { id: "a3", user: { name: "Alex R.", avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop&crop=faces" },
-    song: { title: "Strobe", artist: "deadmau5" }, timeLabel: "Yesterday", environment: "mall", placeLabel: "Ross Park Mall" },
+    song: { title: "So Be It", artist: "Clipse" }, timeLabel: "Yesterday", environment: "mall", placeLabel: "Ross Park Mall" },
 ];
 
 /** Formats "when they found it vs. you" copy. Kept here so Result and Profile agree. */
